@@ -1,127 +1,127 @@
 /*
- * VeneraX 3.0.0 Comic Source Template
- *
- * 可运行的中性示例模板。
- * 新建漫画源时，复制本文件并修改：
- * 1. name / key / version
- * 2. exampleComics 示例数据
- * 3. search.load 搜索逻辑
- * 4. comic.loadInfo 详情解析
- * 5. comic.loadEp 图片解析
+ * VeneraX 3.0.0
+ * Generic Comic Source Template
  */
 
 class ExampleSource extends ComicSource {
-  // ==============================
-  // 基本信息
-  // ==============================
-
   name = "Example Source";
   key = "example_source";
-  version = "1.0.0";
+  version = "1.2.0";
   minAppVersion = "3.0.0";
   url = "";
 
-  // ==============================
-  // 示例数据
-  // 实际开发时替换为网站数据
-  // ==============================
+  pageSize = 20;
 
-  exampleComics = [
+  // 统一漫画数据格式
+  comicsData = [
     {
-      id: "example_001",
-      title: "示例漫画一",
-      cover: "https://placehold.co/600x900/png?text=Comic+1",
-      subtitle: "示例作品",
-      tags: ["示例", "测试"],
-      description: "这是一个示例漫画。",
-      chapters: {
-        chapter_1: "第一章",
-        chapter_2: "第二章"
-      }
-    },
-    {
-      id: "example_002",
-      title: "示例漫画二",
-      cover: "https://placehold.co/600x900/png?text=Comic+2",
-      subtitle: "分页示例",
-      tags: ["示例", "分页"],
-      description: "这是第二个示例漫画。",
-      chapters: {
-        chapter_1: "第一章"
-      }
+      id: "comic_001",
+      title: "示例漫画",
+      cover: "https://placehold.co/600x900",
+      subtitle: "示例作者",
+      description: "示例简介",
+      tags: ["示例", "原创"],
+      chapters: [
+        {
+          id: "chapter_001",
+          title: "第一章",
+          images: [
+            "https://placehold.co/800x1200"
+          ]
+        },
+        {
+          id: "chapter_002",
+          title: "第二章",
+          images: [
+            "https://placehold.co/800x1200"
+          ]
+        }
+      ]
     }
   ];
 
-  // ==============================
-  // 搜索与分页
-  // ==============================
+  // 通用查找
+  findComic(id) {
+    return this.comicsData.find(
+      comic => String(comic.id) === String(id)
+    );
+  }
 
+  // 搜索
   search = {
     optionList: [],
 
     load: async (keyword, options, page) => {
-      const text = String(keyword || "").trim().toLowerCase();
+      const query = String(keyword || "").trim().toLowerCase();
 
-      const filtered = this.exampleComics.filter(comic =>
-        !text || comic.title.toLowerCase().includes(text)
+      const results = this.comicsData.filter(comic =>
+        !query ||
+        comic.title.toLowerCase().includes(query) ||
+        comic.subtitle.toLowerCase().includes(query) ||
+        comic.tags.some(tag => tag.toLowerCase().includes(query))
       );
 
-      const pageSize = 2;
-      const pageNumber = Math.max(1, Number(page) || 1);
-      const start = (pageNumber - 1) * pageSize;
+      const currentPage = Math.max(1, Number(page) || 1);
+      const start = (currentPage - 1) * this.pageSize;
 
       return {
-        comics: filtered.slice(start, start + pageSize),
-        maxPage: Math.max(1, Math.ceil(filtered.length / pageSize))
+        comics: results.slice(start, start + this.pageSize).map(comic => ({
+          id: comic.id,
+          title: comic.title,
+          cover: comic.cover,
+          subtitle: comic.subtitle
+        })),
+        maxPage: Math.max(1, Math.ceil(results.length / this.pageSize))
       };
     }
   };
 
-  // ==============================
-  // 漫画详情与章节图片
-  // ==============================
-
+  // 详情、章节、图片
   comic = {
     loadInfo: async (id) => {
-      const data = this.exampleComics.find(
-        item => item.id === id
-      );
+      const comic = this.findComic(id);
 
-      if (!data) {
-        throw new Error("Comic not found: " + id);
+      if (!comic) {
+        throw new Error("Comic not found");
       }
 
+      const chapters = {};
+
+      comic.chapters.forEach(chapter => {
+        chapters[chapter.id] = chapter.title;
+      });
+
       return {
-        title: data.title,
-        subtitle: data.subtitle,
-        cover: data.cover,
-        description: data.description,
+        comicId: comic.id,
+        sourceKey: this.key,
+        title: comic.title,
+        subtitle: comic.subtitle,
+        cover: comic.cover,
+        description: comic.description,
         tags: {
-          "类型": data.tags
+          "标签": comic.tags
         },
-        chapters: data.chapters
+        chapters
       };
     },
 
     loadEp: async (comicId, epId) => {
-      const data = this.exampleComics.find(
-        item => item.id === comicId
+      const comic = this.findComic(comicId);
+
+      if (!comic) {
+        throw new Error("Comic not found");
+      }
+
+      const chapter = comic.chapters.find(
+        item => String(item.id) === String(epId)
       );
 
-      if (!data) {
-        throw new Error("Comic not found: " + comicId);
+      if (!chapter) {
+        throw new Error("Chapter not found");
       }
 
-      if (!data.chapters[epId]) {
-        throw new Error("Chapter not found: " + epId);
-      }
-
-      // 示例图片。实际开发时替换为章节图片地址。
       return {
-        images: [
-          "https://placehold.co/800x1200/png?text=Page+1",
-          "https://placehold.co/800x1200/png?text=Page+2"
-        ]
+        images: chapter.images
       };
     }
   };
