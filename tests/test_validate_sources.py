@@ -21,7 +21,13 @@ class DemoSource extends ComicSource {
 
 class ValidateSourcesTests(unittest.TestCase):
 
-    def run_validator(self, entries, source_files=None):
+    def run_validator(
+        self,
+        entries=None,
+        source_files=None,
+        index_content=None,
+        create_index=True
+    ):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
 
@@ -35,10 +41,16 @@ class ValidateSourcesTests(unittest.TestCase):
                 scripts_dir / "validate_sources.py"
             )
 
-            (root / "index.json").write_text(
-                json.dumps(entries),
-                encoding="utf-8"
-            )
+            if create_index:
+                content = (
+                    index_content
+                    if index_content is not None
+                    else json.dumps(entries)
+                )
+                (root / "index.json").write_text(
+                    content,
+                    encoding="utf-8"
+                )
 
             for filename, content in (source_files or {}).items():
                 target = root / filename
@@ -141,6 +153,28 @@ class ValidateSourcesTests(unittest.TestCase):
 
         self.assertNotEqual(code, 0)
         self.assertIn("unsafe fileName path", output)
+
+    def test_missing_index_file_fails(self):
+        code, output = self.run_validator(create_index=False)
+
+        self.assertNotEqual(code, 0)
+        self.assertIn("index.json not found", output)
+
+    def test_invalid_json_fails(self):
+        code, output = self.run_validator(
+            index_content="{ invalid json"
+        )
+
+        self.assertNotEqual(code, 0)
+        self.assertIn("Cannot read index.json", output)
+
+    def test_non_array_index_fails(self):
+        code, output = self.run_validator(
+            index_content='{"key": "demo_source"}'
+        )
+
+        self.assertNotEqual(code, 0)
+        self.assertIn("index.json must contain an array", output)
 
 
 if __name__ == "__main__":
