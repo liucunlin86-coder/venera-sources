@@ -1,3 +1,4 @@
+
 import json
 import shutil
 import subprocess
@@ -15,6 +16,22 @@ class DemoSource extends ComicSource {
   name = "Demo Comic";
   key = "demo_source";
   version = "1.0.0";
+
+  search = {
+    load: async (keyword, options, page) => {
+      return { comics: [], maxPage: 1 };
+    }
+  };
+
+  comic = {
+    loadInfo: async (id) => {
+      return { title: "Demo", chapters: {} };
+    },
+
+    loadEp: async (comicId, epId) => {
+      return { images: [] };
+    }
+  };
 }
 '''
 
@@ -170,12 +187,4 @@ class ValidateSourcesTests(unittest.TestCase):
 
     def test_non_array_index_fails(self):
         code, output = self.run_validator(
-            index_content='{"key": "demo_source"}'
-        )
-
-        self.assertNotEqual(code, 0)
-        self.assertIn("index.json must contain an array", output)
-
-
-if __name__ == "__main__":
-    unittest.main()
+         
