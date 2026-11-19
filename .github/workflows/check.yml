@@ -74,4 +74,4 @@ steps:
     run: node --test tests/parser.test.js
 
   - name: Repository check complete
-    run: echo "All checks and unit tests passed"
+    run: echo "All checks and unit tests passed
