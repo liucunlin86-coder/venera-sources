@@ -47,11 +47,9 @@ class ValidateSourcesTests(unittest.TestCase):
     ):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-
             scripts_dir = root / "scripts"
-            sources_dir = root / "sources"
             scripts_dir.mkdir()
-            sources_dir.mkdir()
+            (root / "sources").mkdir()
 
             shutil.copy2(
                 VALIDATOR,
@@ -98,51 +96,38 @@ class ValidateSourcesTests(unittest.TestCase):
             [self.valid_entry()],
             {"sources/demo.js": VALID_SOURCE}
         )
-
         self.assertEqual(code, 0, output)
         self.assertIn("OK: validated 1 source entries", output)
 
     def test_missing_source_file_fails(self):
-        code, output = self.run_validator(
-            [self.valid_entry()]
-        )
-
+        code, output = self.run_validator([self.valid_entry()])
         self.assertNotEqual(code, 0)
         self.assertIn("source file not found", output)
 
     def test_key_mismatch_fails(self):
         entry = self.valid_entry()
         entry["key"] = "another_key"
-
         code, output = self.run_validator(
-            [entry],
-            {"sources/demo.js": VALID_SOURCE}
+            [entry], {"sources/demo.js": VALID_SOURCE}
         )
-
         self.assertNotEqual(code, 0)
         self.assertIn("key mismatch", output)
 
     def test_version_mismatch_fails(self):
         entry = self.valid_entry()
         entry["version"] = "2.0.0"
-
         code, output = self.run_validator(
-            [entry],
-            {"sources/demo.js": VALID_SOURCE}
+            [entry], {"sources/demo.js": VALID_SOURCE}
         )
-
         self.assertNotEqual(code, 0)
         self.assertIn("version mismatch", output)
 
     def test_name_mismatch_fails(self):
         entry = self.valid_entry()
         entry["name"] = "Wrong Name"
-
         code, output = self.run_validator(
-            [entry],
-            {"sources/demo.js": VALID_SOURCE}
+            [entry], {"sources/demo.js": VALID_SOURCE}
         )
-
         self.assertNotEqual(code, 0)
         self.assertIn("name mismatch", output)
 
@@ -150,7 +135,6 @@ class ValidateSourcesTests(unittest.TestCase):
         first = self.valid_entry()
         second = self.valid_entry()
         second["fileName"] = "sources/another.js"
-
         code, output = self.run_validator(
             [first, second],
             {
@@ -158,22 +142,18 @@ class ValidateSourcesTests(unittest.TestCase):
                 "sources/another.js": VALID_SOURCE
             }
         )
-
         self.assertNotEqual(code, 0)
         self.assertIn("duplicate source key", output)
 
     def test_unsafe_path_fails(self):
         entry = self.valid_entry()
         entry["fileName"] = "../outside.js"
-
         code, output = self.run_validator([entry])
-
         self.assertNotEqual(code, 0)
         self.assertIn("unsafe fileName path", output)
 
     def test_missing_index_file_fails(self):
         code, output = self.run_validator(create_index=False)
-
         self.assertNotEqual(code, 0)
         self.assertIn("index.json not found", output)
 
@@ -181,10 +161,49 @@ class ValidateSourcesTests(unittest.TestCase):
         code, output = self.run_validator(
             index_content="{ invalid json"
         )
-
         self.assertNotEqual(code, 0)
         self.assertIn("Cannot read index.json", output)
 
     def test_non_array_index_fails(self):
         code, output = self.run_validator(
-         
+            index_content='{"key": "demo_source"}'
+        )
+        self.assertNotEqual(code, 0)
+        self.assertIn("index.json must contain an array", output)
+
+    def test_missing_search_fails(self):
+        source = VALID_SOURCE.replace(
+            "search = {", "finder = {", 1
+        )
+        code, output = self.run_validator(
+            [self.valid_entry()],
+            {"sources/demo.js": source}
+        )
+        self.assertNotEqual(code, 0)
+        self.assertIn("missing required interface: search object", output)
+
+    def test_missing_load_info_fails(self):
+        source = VALID_SOURCE.replace(
+            "loadInfo: async", "getInfo: async", 1
+        )
+        code, output = self.run_validator(
+            [self.valid_entry()],
+            {"sources/demo.js": source}
+        )
+        self.assertNotEqual(code, 0)
+        self.assertIn("missing required interface: comic.loadInfo", output)
+
+    def test_missing_load_ep_fails(self):
+        source = VALID_SOURCE.replace(
+            "loadEp: async", "getEpisode: async", 1
+        )
+        code, output = self.run_validator(
+            [self.valid_entry()],
+            {"sources/demo.js": source}
+        )
+        self.assertNotEqual(code, 0)
+        self.assertIn("missing required interface: comic.loadEp", output)
+
+
+if __name__ == "__main__":
+    unittest.main()
