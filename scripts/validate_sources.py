@@ -1,3 +1,4 @@
+
 import json
 import re
 import sys
@@ -16,6 +17,22 @@ def read_js_field(source, field):
     pattern = rf"""^\s*{re.escape(field)}\s*=\s*(["'])(.*?)\1\s*;"""
     match = re.search(pattern, source, re.MULTILINE)
     return match.group(2) if match else None
+
+
+def validate_source_interface(source, prefix, errors):
+    required_patterns = {
+        "search object": r"\bsearch\s*=\s*\{",
+        "search.load": r"\bload\s*:\s*(?:async\s*)?\(",
+        "comic object": r"\bcomic\s*=\s*\{",
+        "comic.loadInfo": r"\bloadInfo\s*:\s*(?:async\s*)?\(",
+        "comic.loadEp": r"\bloadEp\s*:\s*(?:async\s*)?\("
+    }
+
+    for name, pattern in required_patterns.items():
+        if not re.search(pattern, source):
+            errors.append(
+                f"{prefix}: missing required interface: {name}"
+            )
 
 
 def main():
@@ -114,6 +131,8 @@ def main():
                     f"{prefix}: {field} mismatch "
                     f"(index={expected!r}, source={actual!r})"
                 )
+
+        validate_source_interface(source, prefix, errors)
 
     if errors:
         print("Source validation failed:")
