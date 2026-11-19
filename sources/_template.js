@@ -1,11 +1,12 @@
-/*
- * Venera source starter template.
- * This is intentionally not a functional comic source yet.
- * Confirm the API signatures against the target Venera/VeneraX version before implementing.
- */
+/* * Venera comic-source starter template. * Not functional yet: this is a development scaffold, not an installable source. * Verify the API against the target Venera/VeneraX release before implementing. */
+class ExampleSource extends ComicSource {
+  name = "Example Source";
+  key = "example_source";
+  version = "1.0.0";
+  minAppVersion = "1.0.0"; // Replace with a version actually tested.
+  url = "";
 
-// TODO: Declare a ComicSource implementation using the app's supported API.
-// TODO: Implement discovery/search or another supported entry point.
-// TODO: Implement comic details and episode/chapter loading.
-// TODO: Implement image loading and validate returned URLs.
-// TODO: Test the source inside the target app before publishing it.
+  // TODO: implement search.load(keyword, options, page)
+  // TODO: implement comic.loadInfo(id)
+  // TODO: implement comic.loadEp(comicId, epId)
+}
