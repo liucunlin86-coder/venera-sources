@@ -20,35 +20,38 @@ jobs:
       - name: Validate index entries
         run: |
           python - <<'PY'
-          import json
-          import sys
+import json
+import sys
 
-          with open("index.json", encoding="utf-8") as f:
-              data = json.load(f)
+with open("index.json", encoding="utf-8") as f:
+    data = json.load(f)
 
-          if not isinstance(data, list):
-              sys.exit("ERROR: index.json must be an array")
+if not isinstance(data, list):
+    sys.exit("ERROR: index.json must be an array")
 
-          names = set()
+keys = set()
 
-          for i, item in enumerate(data):
-              if not isinstance(item, dict):
-                  sys.exit(f"ERROR: Entry {i} must be an object")
+for i, item in enumerate(data):
+    if not isinstance(item, dict):
+        sys.exit(f"ERROR: Entry {i} must be an object")
 
-              for field in ("name", "version"):
-                  if not isinstance(item.get(field), str) or not item[field].strip():
-                      sys.exit(f"ERROR: Entry {i} needs a non-empty {field}")
+    for field in ("key", "version"):
+        if not isinstance(item.get(field), str) or not item[field].strip():
+            sys.exit(f"ERROR: Entry {i} needs a non-empty {field}")
 
-              if ("url" in item) == ("filename" in item):
-                  sys.exit(f"ERROR: Entry {i} must have exactly one of url or filename")
+    has_url = bool(item.get("url"))
+    has_file = bool(item.get("fileName"))
 
-              if item["name"] in names:
-                  sys.exit(f"ERROR: Duplicate source name: {item['name']}")
+    if has_url == has_file:
+        sys.exit(f"ERROR: Entry {i} needs exactly one of url or fileName")
 
-              names.add(item["name"])
+    if item["key"] in keys:
+        sys.exit(f"ERROR: Duplicate source key: {item['key']}")
 
-          print(f"OK: {len(data)} entries")
-          PY
+    keys.add(item["key"])
+
+print(f"OK: {len(data)} entries")  
+       PY
 
       - name: Check JavaScript syntax
         run: |
