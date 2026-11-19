@@ -1,1 +1,10 @@
-[]
+
+[
+  {
+    "key": "demo_test_source",
+    "name": "VeneraX 测试源",
+    "version": "1.0.0",
+    "fileName": "sources/demo_test.js",
+    "description": "虚拟测试源，用于测试搜索、详情和章节图片加载"
+  }
+]
