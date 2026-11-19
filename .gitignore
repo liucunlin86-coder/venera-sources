@@ -1,0 +1,26 @@
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor settings
+.vscode/
+.idea/
+
+# Node.js
+node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Archives
+*.zip
+*.rar
+*.7z
