@@ -13,11 +13,11 @@ Status Legend
 Source Registry
 
 Source| Key| Status| Version| Compatibility| Notes
-VeneraX 测试源| demo_test_source| Testing| 1.1.0| VeneraX 3.0.0+| Core functions tested; pagination needs final confirmation
+VeneraX 测试源| demo_test_source| Stable| 1.1.0| VeneraX 3.0.0+| Search, pagination, details, chapters and images tested successfully
 
 Files
 
-- "demo_test.js": neutral demo source for testing
+- "demo_test.js": neutral demo source
 - "_template.js": reusable source development template
 
 Development Rules
