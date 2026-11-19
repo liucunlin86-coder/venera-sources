@@ -1,70 +1,77 @@
-
 name: Validate Repository
 
 on:
-  push:
-  pull_request:
-  workflow_dispatch:
+push:
+pull_request:
+workflow_dispatch:
 
 jobs:
-  validate:
-    runs-on: ubuntu-latest
+validate:
+runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
 
-      - name: Validate JSON
-        run: python -m json.tool index.json
+  - name: Setup Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version: 20
 
-      - name: Validate index entries
-        run: |
-          python - <<'PY'
-          import json
-          import sys
+  - name: Validate JSON
+    run: python -m json.tool index.json
 
-          with open("index.json", encoding="utf-8") as f:
-              data = json.load(f)
+  - name: Validate index entries
+    run: |
+      python - <<'PY'
+      import json
+      import sys
 
-          if not isinstance(data, list):
-              sys.exit("ERROR: index.json must be an array")
+      with open("index.json", encoding="utf-8") as f:
+          data = json.load(f)
 
-          keys = set()
+      if not isinstance(data, list):
+          sys.exit("ERROR: index.json must be an array")
 
-          for i, item in enumerate(data):
-              if not isinstance(item, dict):
-                  sys.exit(f"ERROR: Entry {i} must be an object")
+      keys = set()
 
-              for field in ("key", "version"):
-                  if not isinstance(item.get(field), str) or not item[field].strip():
-                      sys.exit(f"ERROR: Entry {i} needs a non-empty {field}")
+      for i, item in enumerate(data):
+          if not isinstance(item, dict):
+              sys.exit(f"ERROR: Entry {i} must be an object")
 
-              has_url = bool(item.get("url"))
-              has_file = bool(item.get("fileName"))
+          for field in ("key", "version"):
+              if not isinstance(item.get(field), str) or not item[field].strip():
+                  sys.exit(f"ERROR: Entry {i} needs a non-empty {field}")
 
-              if has_url == has_file:
-                  sys.exit(f"ERROR: Entry {i} needs exactly one of url or fileName")
+          has_url = bool(item.get("url"))
+          has_file = bool(item.get("fileName"))
 
-              if item["key"] in keys:
-                  sys.exit(f"ERROR: Duplicate source key: {item['key']}")
+          if has_url == has_file:
+              sys.exit(f"ERROR: Entry {i} needs exactly one of url or fileName")
 
-              keys.add(item["key"])
+          if item["key"] in keys:
+              sys.exit(f"ERROR: Duplicate source key: {item['key']}")
 
-          print(f"OK: {len(data)} entries")
-          PY
+          keys.add(item["key"])
 
-      - name: Check JavaScript syntax
-        run: |
-          find sources -type f -name "*.js" -print0 |
-          while IFS= read -r -d '' file; do
-            echo "Checking $file"
-            node --check "$file" || exit 1
-          done
+      print(f"OK: {len(data)} entries")
+      PY
 
-      - name: Check empty source files
-        run: |
-          find sources -type f -name "*.js" -empty -print -quit |
-          grep -q . && exit 1 || exit 0
+  - name: Check JavaScript syntax
+    run: |
+      find sources tests -type f -name "*.js" -print0 |
+      while IFS= read -r -d '' file; do
+        echo "Checking $file"
+        node --check "$file" || exit 1
+      done
 
-      - name: Repository check complete
-        run: echo "All basic checks passed"
+  - name: Check empty source files
+    run: |
+      find sources -type f -name "*.js" -empty -print -quit |
+      grep -q . && exit 1 || exit 0
+
+  - name: Run parser unit tests
+    run: node --test tests/parser.test.js
+
+  - name: Repository check complete
+    run: echo "All checks and unit tests passed"
