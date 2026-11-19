@@ -1,17 +1,16 @@
 
 /*
  * VeneraX 3.0.0 Demo Test Source
- * A fictional source for testing search, details and image loading.
+ * Tests search, pagination, details and chapter images.
  */
 
 class DemoTestSource extends ComicSource {
   name = "VeneraX 测试源";
   key = "demo_test_source";
-  version = "1.0.0";
+  version = "1.1.0";
   minAppVersion = "3.0.0";
   url = "https://github.com/liucunlin86-coder/venera-sources";
 
-  // Fictional comic data
   demoComics = [
     {
       id: "demo_001",
@@ -28,28 +27,46 @@ class DemoTestSource extends ComicSource {
       subtitle: "第二本测试作品",
       tags: ["测试", "示例"],
       description: "这是第二本虚构的测试漫画。"
+    },
+    {
+      id: "demo_003",
+      title: "测试漫画三",
+      cover: "https://placehold.co/600x900/png?text=Demo+Comic+3",
+      subtitle: "第三本测试作品",
+      tags: ["测试", "分页"],
+      description: "这是第三本虚构的测试漫画。"
+    },
+    {
+      id: "demo_004",
+      title: "测试漫画四",
+      cover: "https://placehold.co/600x900/png?text=Demo+Comic+4",
+      subtitle: "第四本测试作品",
+      tags: ["测试", "分页"],
+      description: "这是第四本虚构的测试漫画。"
     }
   ];
 
-  // Search
   search = {
     optionList: [],
 
     load: async (keyword, options, page) => {
       const text = String(keyword || "").trim().toLowerCase();
 
-      const comics = this.demoComics.filter(comic =>
+      const filtered = this.demoComics.filter(comic =>
         !text || comic.title.toLowerCase().includes(text)
       );
 
+      const pageSize = 2;
+      const pageNumber = Math.max(1, Number(page) || 1);
+      const start = (pageNumber - 1) * pageSize;
+
       return {
-        comics: comics,
-        maxPage: 1
+        comics: filtered.slice(start, start + pageSize),
+        maxPage: Math.max(1, Math.ceil(filtered.length / pageSize))
       };
     }
   };
 
-  // Comic details and chapters
   comic = {
     loadInfo: async (id) => {
       const data = this.demoComics.find(item => item.id === id);
@@ -73,13 +90,12 @@ class DemoTestSource extends ComicSource {
       };
     },
 
-    // Chapter images
     loadEp: async (comicId, epId) => {
-      const comic = this.demoComics.find(
+      const data = this.demoComics.find(
         item => item.id === comicId
       );
 
-      if (!comic) {
+      if (!data) {
         throw new Error("Comic not found");
       }
 
