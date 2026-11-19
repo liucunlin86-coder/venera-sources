@@ -9,7 +9,7 @@ INDEX_FILE = ROOT / "index.json"
 
 def fail(message):
     print(f"ERROR: {message}")
-    return False
+    return 1
 
 
 def read_js_field(source, field):
