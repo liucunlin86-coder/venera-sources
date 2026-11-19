@@ -1,30 +1,34 @@
-# Venera Source Repository Starter
+Venera Source Repository
 
-This is a starter repository layout for organizing Venera-compatible comic sources.
+A starter repository for organizing Venera-compatible JavaScript comic sources.
 
 
-## Files
-- `index.json`: source index (currently empty; add entries only after a source is implemented and tested).
-- `sources/`: JavaScript source files.
-- `sources/_template.js`: neutral starter template for a source.
+Repository URL vs. source script URL
 
-## Index format
-Each source entry typically contains:
-- `name`: display name
-- `key`: unique stable identifier
-- `version`: source version
-- `fileName`: JS filename relative to the index
-- `description` (optional)
 
-Example entry (replace values with a real, tested source):
-```json
-{
-  "name": "Example Source",
-  "key": "example_source",
-  "version": "1.0.0",
-  "fileName": "sources/example_source.js",
-  "description": "Placeholder example"
-}
-```
+A source script URL points directly to a .js file.
 
-Do not add the placeholder to `index.json` until the source is implemented and validated against the target app version.
+A source repository URL points to an index.json file containing an array of source entries.
+
+
+Official-style index entry
+
+Use one of url or filename (not both) per entry. Example:
+
+
+[
+  {
+    "name": "Example Source",
+    "url": "https://example.com/source.js",
+    "version": "1.0.0",
+    "description": "Example comic source"
+  }
+]
+
+Keep index.json as an empty array until a source is implemented and tested.
+
+
+Source script requirements
+
+A source script defines a class extending ComicSource and includes source metadata such as name, unique key, version, minAppVersion, and url. Actual search, comic detail, chapter, and image loading methods must follow the target app version's API and be tested in-app.
+
