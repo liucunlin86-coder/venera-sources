@@ -1,179 +1,230 @@
+
 /*
- * VeneraX Generic Comic Parser Utilities
- * 通用漫画源数据处理工具
+ * VeneraX Generic Comic Parser
+ * 通用漫画源解析工具
  */
 
 class WebComicParserUtils {
 
-  // 1. 清理文本
+  // 清理文本
   static cleanText(value) {
-    if (value === null || value === undefined) {
-      return "";
-    }
+    if (value == null) return "";
 
     return String(value)
-      .replace(/<[^>]*>/g, "")
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
       .replace(/\s+/g, " ")
       .trim();
   }
 
-  // 2. 标签标准化、去重
+  // 统一网址，支持相对地址
+  static resolveUrl(url, baseUrl = "") {
+    if (!url) return "";
+
+    const value = String(url).trim();
+
+    if (!value) return "";
+
+    try {
+      return baseUrl
+        ? new URL(value, baseUrl).href
+        : new URL(value).href;
+    } catch (_) {
+      return "";
+    }
+  }
+
+  // 标签清理和去重
   static normalizeTags(tags) {
-    if (!Array.isArray(tags)) {
-      return [];
+    if (!tags) return [];
+
+    if (typeof tags === "string") {
+      tags = tags.split(/[,，、|]/);
     }
 
+    if (!Array.isArray(tags)) return [];
+
     return [...new Set(
-      tags
-        .map(tag => this.cleanText(tag))
-        .filter(Boolean)
+      tags.map(tag => this.cleanText(tag)).filter(Boolean)
     )];
   }
 
-  // 3. 漫画数据标准化
-  static normalizeComic(data) {
-    if (!data || typeof data !== "object") {
-      throw new Error("Invalid comic data");
-    }
-
-    const id = this.cleanText(data.id);
-    const title = this.cleanText(data.title);
-    const cover = this.cleanText(data.cover);
-
-    if (!id) {
-      throw new Error("Comic ID is missing");
-    }
-
-    if (!title) {
-      throw new Error("Comic title is missing");
-    }
+  // 漫画数据标准化
+  static normalizeComic(data = {}, baseUrl = "") {
+    const id = this.cleanText(data.id ?? data.comicId);
+    const title = this.cleanText(data.title ?? data.name);
 
     return {
       id,
       title,
-      cover,
-      subtitle: this.cleanText(data.subtitle),
-      description: this.cleanText(data.description),
-      tags: this.normalizeTags(data.tags)
+      cover: this.resolveUrl(
+        data.cover ?? data.coverUrl ?? data.image,
+        baseUrl
+      ),
+      subtitle: this.cleanText(
+        data.subtitle ?? data.author
+      ),
+      description: this.cleanText(
+        data.description ?? data.desc ?? data.intro
+      ),
+      tags: this.normalizeTags(data.tags),
+      url: this.resolveUrl(data.url ?? data.link, baseUrl)
     };
   }
 
-  // 4. 通用分页
-  static paginate(items, page, pageSize) {
-    if (!Array.isArray(items)) {
-      throw new Error("Pagination input must be an array");
-    }
+  // 漫画列表去重
+  static dedupeComics(comics = []) {
+    if (!Array.isArray(comics)) return [];
 
-    const size = Math.max(
-      1,
-      Number(pageSize) || 20
-    );
+    const seen = new Set();
 
-    const currentPage = Math.max(
-      1,
-      Number(page) || 1
-    );
+    return comics.filter(comic => {
+      if (!comic) return false;
 
-    const totalItems = items.length;
+      const id = String(comic.id ?? "").trim();
 
-    const maxPage = Math.max(
-      1,
-      Math.ceil(totalItems / size)
-    );
+      if (!id || seen.has(id)) return false;
 
-    const start = (currentPage - 1) * size;
+      seen.add(id);
+      return true;
+    });
+  }
+
+  // 通用分页
+  static paginate(items = [], page = 1, pageSize = 20) {
+    if (!Array.isArray(items)) items = [];
+
+    const size = Math.max(1, Number(pageSize) || 20);
+    const current = Math.max(1, Number(page) || 1);
+    const maxPage = Math.max(1, Math.ceil(items.length / size));
+    const start = (current - 1) * size;
 
     return {
       comics: items.slice(start, start + size),
-      page: currentPage,
+      page: current,
       pageSize: size,
-      totalItems,
+      totalItems: items.length,
       maxPage
     };
   }
 
-  // 5. 图片地址过滤
-  static validateImageUrls(images) {
-    if (!Array.isArray(images)) {
-      return [];
-    }
+  // 图片网址标准化、去重
+  static normalizeImages(images = [], baseUrl = "") {
+    if (!Array.isArray(images)) return [];
 
-    return images
-      .filter(url => typeof url === "string")
-      .map(url => url.trim())
-      .filter(url => /^https?:\/\/[^\s]+$/i.test(url));
-  }
+    const seen = new Set();
+    const result = [];
 
-  // 6. 章节标准化
-  // 支持数组和对象两种形式
-  static normalizeChapters(chapters) {
-    if (!chapters) {
-      return {};
-    }
+    for (const item of images) {
+      let url = "";
 
-    const result = {};
-
-    // 数组形式
-    if (Array.isArray(chapters)) {
-      chapters.forEach((chapter, index) => {
-        if (!chapter || typeof chapter !== "object") {
-          return;
-        }
-
-        const id = this.cleanText(
-          chapter.id ?? chapter.chapterId ?? index
-        );
-
-        const title = this.cleanText(
-          chapter.title ?? chapter.name
-        );
-
-        if (id && title) {
-          result[id] = title;
-        }
-      });
-
-      return result;
-    }
-
-    // 对象形式
-    if (typeof chapters === "object") {
-      for (const [id, title] of Object.entries(chapters)) {
-        const chapterId = this.cleanText(id);
-        const chapterTitle = this.cleanText(title);
-
-        if (chapterId && chapterTitle) {
-          result[chapterId] = chapterTitle;
-        }
+      if (typeof item === "string") {
+        url = item;
+      } else if (item && typeof item === "object") {
+        url = item.url ?? item.src ?? item.original ?? "";
       }
+
+      url = this.resolveUrl(url, baseUrl);
+
+      if (!url || seen.has(url)) continue;
+
+      seen.add(url);
+      result.push(url);
     }
 
     return result;
   }
 
-  // 7. 图片列表标准化
-  static normalizeImages(images) {
-    if (!Array.isArray(images)) {
-      return [];
-    }
-
-    return this.validateImageUrls(
-      images.map(image => {
-        if (typeof image === "string") {
-          return image;
-        }
-
-        if (image && typeof image === "object") {
-          return image.url || image.src || "";
-        }
-
-        return "";
-      })
-    );
+  // 兼容旧方法名
+  static validateImageUrls(images, baseUrl = "") {
+    return this.normalizeImages(images, baseUrl);
   }
 
-  // 8. 统一错误信息
-  static getErrorMessage(error, fallback = "Unknown error") {
+  // 章节排序：识别章节号
+  static getChapterNumber(chapter, index = 0) {
+    const title = String(
+      chapter.title ?? chapter.name ?? ""
+    );
+
+    const match = title.match(
+      /(\d+(?:\.\d+)?)/
+    );
+
+    if (match) return Number(match[1]);
+
+    return index;
+  }
+
+  // 章节标准化，支持数组及对象
+  static normalizeChapters(chapters, sort = false) {
+    if (!chapters) return {};
+
+    let list = [];
+
+    if (Array.isArray(chapters)) {
+      list = chapters.map((chapter, index) => {
+        if (typeof chapter === "string") {
+          return {
+            id: String(index),
+            title: this.cleanText(chapter),
+            index
+          };
+        }
+
+        if (!chapter || typeof chapter !== "object") {
+          return null;
+        }
+
+        return {
+          id: String(
+            chapter.id ?? chapter.chapterId ?? index
+          ),
+          title: this.cleanText(
+            chapter.title ?? chapter.name ?? `第${index + 1}章`
+          ),
+          index,
+          url: chapter.url ?? chapter.link ?? ""
+        };
+      }).filter(Boolean);
+    } else if (typeof chapters === "object") {
+      list = Object.entries(chapters).map(
+        ([id, title], index) => ({
+          id: String(id),
+          title: this.cleanText(
+            typeof title === "object"
+              ? title.title ?? title.name ?? id
+              : title
+          ),
+          index
+        })
+      );
+    }
+
+    if (sort) {
+      list.sort((a, b) =>
+        this.getChapterNumber(a, a.index) -
+        this.getChapterNumber(b, b.index)
+      );
+    }
+
+    const result = {};
+
+    for (const chapter of list) {
+      if (!chapter.id || !chapter.title) continue;
+
+      result[chapter.id] = chapter.title;
+    }
+
+    return result;
+  }
+
+  // 获取错误信息
+  static getErrorMessage(error, fallback = "请求失败") {
     if (error && error.message) {
       return this.cleanText(error.message);
     }
