@@ -17,7 +17,7 @@ jobs:
       - name: Validate JSON
         run: python -m json.tool index.json
 
-      - name: Validate index structure
+      - name: Validate index entries
         run: |
           python - <<'PY'
           import json
@@ -29,9 +29,23 @@ jobs:
           if not isinstance(data, list):
               sys.exit("ERROR: index.json must be an array")
 
+          names = set()
+
           for i, item in enumerate(data):
               if not isinstance(item, dict):
                   sys.exit(f"ERROR: Entry {i} must be an object")
+
+              for field in ("name", "version"):
+                  if not isinstance(item.get(field), str) or not item[field].strip():
+                      sys.exit(f"ERROR: Entry {i} needs a non-empty {field}")
+
+              if ("url" in item) == ("filename" in item):
+                  sys.exit(f"ERROR: Entry {i} must have exactly one of url or filename")
+
+              if item["name"] in names:
+                  sys.exit(f"ERROR: Duplicate source name: {item['name']}")
+
+              names.add(item["name"])
 
           print(f"OK: {len(data)} entries")
           PY
