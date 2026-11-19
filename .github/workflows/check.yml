@@ -57,6 +57,9 @@ jobs:
           print(f"OK: {len(data)} entries")
           PY
 
+      - name: Validate source files against index
+        run: python scripts/validate_sources.py
+
       - name: Check JavaScript syntax
         run: |
           find sources tests -type f -name "*.js" -print0 |
