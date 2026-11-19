@@ -210,9 +210,15 @@ assert.equal(Object.keys(result).length, 2);
 
 test("normalizeChapters handles empty input", () => {
 const result = Parser.normalizeChapters(null);
-
 assert.equal(Object.keys(result).length, 0);
 });
 
 test("normalizeChapters handles duplicate normalized IDs", () => {
-const result = Parser.normalizeCha
+const result = Parser.normalizeChapters({
+" chapter_1 ": "First title",
+chapter_1: "Updated title"
+});
+
+assert.equal(result.chapter_1, "Updated title");
+assert.equal(Object.keys(result).length, 1);
+});
