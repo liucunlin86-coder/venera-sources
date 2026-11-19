@@ -149,8 +149,6 @@ assert.equal(Object.keys(result).length, 2);
 });
 
 test("normalizeChapters handles empty input", () => {
-assert.deepEqual(
-Parser.normalizeChapters(null),
-{}
-);
+  const result = Parser.normalizeChapters(null);
+  assert.equal(Object.keys(result).length, 0);
 });
