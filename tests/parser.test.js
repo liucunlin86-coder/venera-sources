@@ -49,6 +49,22 @@ assert.deepEqual(Array.from(result), [
 ]);
 });
 
+test("normalizeTags handles non-array input", () => {
+assert.deepEqual(
+Array.from(Parser.normalizeTags(null)),
+[]
+);
+
+assert.deepEqual(
+Array.from(Parser.normalizeTags("Action")),
+[]
+);
+});
+
+test("normalizeTags handles empty arrays", () => {
+assert.equal(Parser.normalizeTags([]).length, 0);
+});
+
 // 3. Comic normalization
 test("normalizeComic returns standard comic data", () => {
 const result = Parser.normalizeComic({
@@ -64,6 +80,7 @@ assert.equal(result.id, "comic_001");
 assert.equal(result.title, "Example Comic");
 assert.equal(result.subtitle, "Demo");
 assert.equal(result.description, "Example description");
+
 assert.deepEqual(Array.from(result.tags), [
 "Action",
 "Drama"
@@ -81,6 +98,13 @@ test("normalizeComic rejects missing titles", () => {
 assert.throws(
 () => Parser.normalizeComic({ id: "comic_001" }),
 /Comic title is missing/
+);
+});
+
+test("normalizeComic rejects null input", () => {
+assert.throws(
+() => Parser.normalizeComic(null),
+/Invalid comic data/
 );
 });
 
@@ -111,6 +135,27 @@ assert.throws(
 );
 });
 
+test("paginate handles negative page numbers", () => {
+const result = Parser.paginate([1, 2, 3], -5, 2);
+
+assert.equal(result.page, 1);
+assert.deepEqual(Array.from(result.comics), [1, 2]);
+});
+
+test("paginate handles zero page size", () => {
+const result = Parser.paginate([1, 2, 3], 1, 0);
+
+assert.equal(result.pageSize, 20);
+assert.deepEqual(Array.from(result.comics), [1, 2, 3]);
+});
+
+test("paginate returns an empty page beyond maxPage", () => {
+const result = Parser.paginate([1, 2, 3], 10, 2);
+
+assert.equal(result.maxPage, 2);
+assert.equal(result.comics.length, 0);
+});
+
 // 5. Image URL validation
 test("validateImageUrls filters invalid URLs", () => {
 const result = Parser.validateImageUrls([
@@ -134,6 +179,21 @@ assert.throws(
 );
 });
 
+test("validateImageUrls rejects unsupported URL schemes", () => {
+const result = Parser.validateImageUrls([
+"ftp://example.com/image.jpg",
+"data:image/png;base64,AAAA",
+"/images/cover.jpg",
+"https://example.com/image one.jpg"
+]);
+
+assert.equal(result.length, 0);
+});
+
+test("validateImageUrls handles empty arrays", () => {
+assert.equal(Parser.validateImageUrls([]).length, 0);
+});
+
 // 6. Chapter normalization
 test("normalizeChapters removes invalid entries", () => {
 const result = Parser.normalizeChapters({
@@ -149,6 +209,10 @@ assert.equal(Object.keys(result).length, 2);
 });
 
 test("normalizeChapters handles empty input", () => {
-  const result = Parser.normalizeChapters(null);
-  assert.equal(Object.keys(result).length, 0);
+const result = Parser.normalizeChapters(null);
+
+assert.equal(Object.keys(result).length, 0);
 });
+
+test("normalizeChapters handles duplicate normalized IDs", () => {
+const result = Parser.normalizeCha
